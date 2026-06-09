@@ -18,12 +18,12 @@ Property-Set
   .pxRequestor.pyAccessGroup = "TestAutomation:NoExpiry"
 ```
 
-### Step 2: Find expiring operators (Obj-Browse)
+### Step 2: Find operators needing rotation (Obj-Browse)
 ```
 Obj-Browse
   Class: Data-Admin-Operator-ID
   Filter: pyAccessGroup IN ("TestAutomation:Operators", "TestAutomation:NoExpiry")
-  Filter: pyPasswordExpiryDate <= @(addDays(@CurrentDateTime(), 3))
+  Filter: <use your org's method for identifying expiring/aged passwords -- e.g. pyLastPasswordChangedTime, pxPasswordHistory, or Security Policy-driven expiry>
   Results: .pxResults
 ```
 
@@ -42,12 +42,13 @@ Property-Set
 ```
 Property-Set
   .pyPassword = Param.NewPassword
-  .pyPasswordExpiryDate = @addDays(@CurrentDateTime(), 30)
 
 Obj-Save
   Class: Data-Admin-Operator-ID
   WriteNow: true
 ```
+
+**Note**: Pega does not expose a `pyPasswordExpiryDate` attribute on `Data-Admin-Operator-ID`. If your org enforces password expiry via **Security Policies**, Pega tracks age internally (e.g., via `pyLastPasswordChangedTime` or `pxPasswordHistory`). The rotation schedule of 30 days should align with your existing Security Policy — do not invent a new property.
 
 ### Step 3c: Call Azure bridge (Connect-REST)
 ```

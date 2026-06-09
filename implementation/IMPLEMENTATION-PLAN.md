@@ -209,11 +209,10 @@ Build the `TestOperator_ExpiryCheckAndRotate` Activity that ties everything toge
 See `implementation/pega/TestOperator_ExpiryCheckAndRotate.md` for the complete step-by-step specification.
 
 Key implementation reminders:
-- Browse `Data-Admin-Operator-ID` where `pyPasswordExpiryDate` is within 2 days of today
+- Browse `Data-Admin-Operator-ID` where <use your org's mechanism: e.g. `pyLastPasswordChangedTime`, `pxPasswordHistory`, or Security Policy-driven expiry>
 - Generate password: `pxRandomString(16, "alphanumeric+symbols")`
 - Set `.pyPassword` (not `.pyPasswordHash`) — Pega auto-hashes on `Obj-Save`
 - Call Connect-REST `TestOperator_RotatePassword` with the new password
-- Update `.pyPasswordExpiryDate` to today + 30 days
 - Save operator record
 
 **Never write `Param.NewPassword` into audit entries or Clipboard trace data.**
@@ -226,18 +225,18 @@ Key implementation reminders:
 - **Node type**: Any (or assign to a specific background processing node)
 
 #### 5.3 Manual Test
-1. Set a test operator's `pyPasswordExpiryDate` to today + 1 day
+1. Identify a test operator whose password has not been rotated recently (check `pyLastPasswordChangedTime` or `pxPasswordHistory`)
 2. Trigger the Job Scheduler manually from Admin Studio
 3. Watch the Activity trace
 4. Verify in Azure Key Vault that a new secret was created (or version updated)
-5. Verify the operator's `pyPasswordExpiryDate` moved to today + 30 days
+5. Verify the operator's `pyLastPasswordChangedTime` is updated (Pega updates this automatically on `Obj-Save` of `.pyPassword`)
 
 ### End-of-day checkpoint
 - [ ] Activity `TestOperator_ExpiryCheckAndRotate` created and checked in
 - [ ] Job Scheduler created and active in Admin Studio
 - [ ] Manual trigger rotated at least one test operator password
 - [ ] Azure Key Vault shows new secret version for that operator
-- [ ] Operator's `pyPasswordExpiryDate` updated correctly in Pega
+- [ ] Operator record updated (Pega updates `pyLastPasswordChangedTime` automatically on `Obj-Save` of `.pyPassword`)
 
 ---
 
@@ -307,7 +306,7 @@ Azure Functions log to Application Insights automatically. Configure alerts:
 
 #### 7.2 Pega Alerts
 - Configure Pega alert for Job Scheduler failures
-- Monitor `Data-Admin-Operator-ID` records with `pyPasswordExpiryDate` within 1 day
+- Monitor `Data-Admin-Operator-ID` records that have not been rotated per your Security Policy schedule
 - Alert on Connect-REST timeout or 5xx responses
 
 #### 7.3 Key Vault Monitoring
@@ -317,11 +316,11 @@ Azure Functions log to Application Insights automatically. Configure alerts:
 
 #### 7.4 Final Verification Checklist
 - [ ] Job Scheduler runs daily without errors
-- [ ] All 10+ test operators have passwords rotated before expiry
+- [ ] All 10+ test operators have passwords rotated (verify via `pyLastPasswordChangedTime` or `pxPasswordHistory`)
 - [ ] AKV secrets are updated within 1 minute of Pega rotation
 - [ ] Test automation retrieves correct passwords from AKV
-- [ ] No plaintext passwords in Azure Function logs, Pega logs, or audit
-- [ ] All alerts configured and tested (trigger a test alert)
+- [ ] No plaintext passwords in any logs
+- [ ] All alerts are configured and tested
 
 ---
 
